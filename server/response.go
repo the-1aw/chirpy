@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -11,7 +10,6 @@ func respondWithJSON(w http.ResponseWriter, statusCode int, payload any) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(res))
 	w.Header().Set("content-type", "application/json")
 	w.WriteHeader(statusCode)
 	w.Write(res)

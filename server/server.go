@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync/atomic"
 )
 
@@ -37,12 +38,32 @@ func (cfg *apiConfig) resetCount(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte("OK"))
 }
 
+func getProfaneWords() [3]string { return [...]string{"kerfuffle", "sharbert", "fornax"} }
+
+func cleanChrip(chirp string) string {
+	cleanedWords := []string{}
+	for word := range strings.SplitSeq(chirp, " ") {
+		isProfaneWord := false
+		for _, profaneWord := range getProfaneWords() {
+			if profaneWord == strings.ToLower(word) {
+				isProfaneWord = true
+			}
+		}
+		if isProfaneWord {
+			cleanedWords = append(cleanedWords, "****")
+		} else {
+			cleanedWords = append(cleanedWords, word)
+		}
+	}
+	return strings.Join(cleanedWords, " ")
+}
+
 func validateChirp(w http.ResponseWriter, r *http.Request) {
 	type request struct {
 		Body string
 	}
 	type responseBody struct {
-		Valid bool `json:"valid"`
+		CleanedBody string `json:"cleaned_body"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	req := request{}
@@ -54,7 +75,7 @@ func validateChirp(w http.ResponseWriter, r *http.Request) {
 		respondWithErrorJSON(w, 400, fmt.Errorf("Chirp is too long"))
 		return
 	}
-	res := responseBody{Valid: true}
+	res := responseBody{CleanedBody: cleanChrip(req.Body)}
 	respondWithJSON(w, 200, res)
 }
 
