@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync/atomic"
@@ -37,6 +38,24 @@ func (cfg *apiConfig) resetCount(w http.ResponseWriter, _ *http.Request) {
 }
 
 func validateChirp(w http.ResponseWriter, r *http.Request) {
+	type request struct {
+		Body string
+	}
+	type responseBody struct {
+		Valid bool `json:"valid"`
+	}
+	decoder := json.NewDecoder(r.Body)
+	req := request{}
+	if err := decoder.Decode(&req); err != nil {
+		respondWithErrorJSON(w, 500, err)
+		return
+	}
+	if len(req.Body) > 140 {
+		respondWithErrorJSON(w, 400, fmt.Errorf("Chirp is too long"))
+		return
+	}
+	res := responseBody{Valid: true}
+	respondWithJSON(w, 200, res)
 }
 
 func healthz(w http.ResponseWriter, r *http.Request) {
