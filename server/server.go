@@ -20,14 +20,23 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 }
 
 func (cfg *apiConfig) requestCount(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("content-type", "text/html")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Hits: %v", cfg.fileserverHits.Load())
+	fmt.Fprintf(w, `<html>
+  <body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited %d times!</p>
+  </body>
+</html>`, cfg.fileserverHits.Load())
 }
 
 func (cfg *apiConfig) resetCount(w http.ResponseWriter, _ *http.Request) {
 	cfg.fileserverHits.Store(0)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
+}
+
+func validateChirp(w http.ResponseWriter, r *http.Request) {
 }
 
 func healthz(w http.ResponseWriter, r *http.Request) {
@@ -39,10 +48,11 @@ func healthz(w http.ResponseWriter, r *http.Request) {
 func Run() {
 	cfg := apiConfig{}
 	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz/", healthz)
-	mux.HandleFunc("/metrics/", cfg.requestCount)
-	mux.HandleFunc("/reset/", cfg.resetCount)
 	mux.Handle("/app/", cfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
+	mux.HandleFunc("GET /api/healthz", healthz)
+	mux.HandleFunc("POST /api/validate_chirp", validateChirp)
+	mux.HandleFunc("GET /admin/metrics", cfg.requestCount)
+	mux.HandleFunc("POST /admin/reset", cfg.resetCount)
 	server := http.Server{
 		Handler: mux,
 		Addr:    ":8080",
