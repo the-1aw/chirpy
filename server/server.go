@@ -37,8 +37,13 @@ func (cfg *apiConfig) requestCount(w http.ResponseWriter, _ *http.Request) {
 </html>`, cfg.fileserverHits.Load())
 }
 
-func (cfg *apiConfig) resetCount(w http.ResponseWriter, _ *http.Request) {
+func (cfg *apiConfig) reset(w http.ResponseWriter, r *http.Request) {
+	if os.Getenv("PLATFORM") != "dev" {
+		respondWithErrorJSON(w, http.StatusForbidden, fmt.Errorf("Cannot reset database if not in dev mode"))
+		return
+	}
 	cfg.fileserverHits.Store(0)
+	cfg.db.DeleteAllUsers(r.Context())
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("OK"))
 }
@@ -73,15 +78,15 @@ func validateChirp(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	req := request{}
 	if err := decoder.Decode(&req); err != nil {
-		respondWithErrorJSON(w, 500, err)
+		respondWithErrorJSON(w, http.StatusBadRequest, err)
 		return
 	}
 	if len(req.Body) > 140 {
-		respondWithErrorJSON(w, 400, fmt.Errorf("Chirp is too long"))
+		respondWithErrorJSON(w, http.StatusBadRequest, fmt.Errorf("Chirp is too long"))
 		return
 	}
 	res := responseBody{CleanedBody: cleanChrip(req.Body)}
-	respondWithJSON(w, 200, res)
+	respondWithJSON(w, http.StatusOK, res)
 }
 
 func healthz(w http.ResponseWriter, r *http.Request) {
@@ -102,10 +107,11 @@ func Run() error {
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/app/", cfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
+	mux.Handle("POST /api/users", getCreateUserHandler(&cfg))
 	mux.HandleFunc("GET /api/healthz", healthz)
 	mux.HandleFunc("POST /api/validate_chirp", validateChirp)
 	mux.HandleFunc("GET /admin/metrics", cfg.requestCount)
-	mux.HandleFunc("POST /admin/reset", cfg.resetCount)
+	mux.HandleFunc("POST /admin/reset", cfg.reset)
 	server := http.Server{
 		Handler: mux,
 		Addr:    ":8080",
