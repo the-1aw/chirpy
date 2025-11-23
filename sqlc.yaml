@@ -1,0 +1,14 @@
+version: "2"
+servers: []
+sql: 
+  - engine: "postgresql"
+    queries: "sql/queries"
+    schema: "sql/schema"
+    gen:
+      go:
+        out: "internal/database"
+overrides:
+    go: null
+plugins: []
+rules: []
+options: {}

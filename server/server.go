@@ -1,15 +1,20 @@
 package server
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"sync/atomic"
+
+	"github.com/the-1aw/chirpy/internal/database"
 )
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
+	db             *database.Queries
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -85,8 +90,16 @@ func healthz(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-func Run() {
-	cfg := apiConfig{}
+func Run() error {
+	dbUrl := os.Getenv("DB_URL")
+	db, err := sql.Open("postgres", dbUrl)
+	if err != nil {
+		return err
+	}
+	dbQueries := database.New(db)
+	cfg := apiConfig{
+		db: dbQueries,
+	}
 	mux := http.NewServeMux()
 	mux.Handle("/app/", cfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
 	mux.HandleFunc("GET /api/healthz", healthz)
@@ -97,5 +110,5 @@ func Run() {
 		Handler: mux,
 		Addr:    ":8080",
 	}
-	server.ListenAndServe()
+	return server.ListenAndServe()
 }

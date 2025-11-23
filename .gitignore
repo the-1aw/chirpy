@@ -1,1 +1,8 @@
+# server binary
 chirpy
+
+# env files
+.env
+
+# sqlc generated files
+internal/database
