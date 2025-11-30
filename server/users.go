@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -41,6 +42,7 @@ func getCreateUserHandler(cfg *apiConfig) http.Handler {
 			respondWithErrorJSON(w, http.StatusInternalServerError, err)
 			return
 		}
+		fmt.Println(user)
 		respondWithJSON(w, http.StatusCreated, fromDbUser(user))
 	})
 }

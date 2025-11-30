@@ -2,11 +2,9 @@ package server
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
 	"sync/atomic"
 
 	"github.com/the-1aw/chirpy/internal/database"
@@ -48,47 +46,6 @@ func (cfg *apiConfig) reset(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-func getProfaneWords() [3]string { return [...]string{"kerfuffle", "sharbert", "fornax"} }
-
-func cleanChrip(chirp string) string {
-	cleanedWords := []string{}
-	for word := range strings.SplitSeq(chirp, " ") {
-		isProfaneWord := false
-		for _, profaneWord := range getProfaneWords() {
-			if profaneWord == strings.ToLower(word) {
-				isProfaneWord = true
-			}
-		}
-		if isProfaneWord {
-			cleanedWords = append(cleanedWords, "****")
-		} else {
-			cleanedWords = append(cleanedWords, word)
-		}
-	}
-	return strings.Join(cleanedWords, " ")
-}
-
-func validateChirp(w http.ResponseWriter, r *http.Request) {
-	type request struct {
-		Body string
-	}
-	type responseBody struct {
-		CleanedBody string `json:"cleaned_body"`
-	}
-	decoder := json.NewDecoder(r.Body)
-	req := request{}
-	if err := decoder.Decode(&req); err != nil {
-		respondWithErrorJSON(w, http.StatusBadRequest, err)
-		return
-	}
-	if len(req.Body) > 140 {
-		respondWithErrorJSON(w, http.StatusBadRequest, fmt.Errorf("Chirp is too long"))
-		return
-	}
-	res := responseBody{CleanedBody: cleanChrip(req.Body)}
-	respondWithJSON(w, http.StatusOK, res)
-}
-
 func healthz(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
@@ -108,8 +65,8 @@ func Run() error {
 	mux := http.NewServeMux()
 	mux.Handle("/app/", cfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
 	mux.Handle("POST /api/users", getCreateUserHandler(&cfg))
+	mux.Handle("POST /api/chirps", getCreateChirpHandler(&cfg))
 	mux.HandleFunc("GET /api/healthz", healthz)
-	mux.HandleFunc("POST /api/validate_chirp", validateChirp)
 	mux.HandleFunc("GET /admin/metrics", cfg.requestCount)
 	mux.HandleFunc("POST /admin/reset", cfg.reset)
 	server := http.Server{
