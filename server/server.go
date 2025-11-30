@@ -66,6 +66,7 @@ func Run() error {
 	mux.Handle("/app/", cfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
 	mux.Handle("POST /api/users", getCreateUserHandler(&cfg))
 	mux.Handle("POST /api/chirps", getCreateChirpHandler(&cfg))
+	mux.Handle("GET /api/chirps", getGetChirpHandler(&cfg))
 	mux.HandleFunc("GET /api/healthz", healthz)
 	mux.HandleFunc("GET /admin/metrics", cfg.requestCount)
 	mux.HandleFunc("POST /admin/reset", cfg.reset)
