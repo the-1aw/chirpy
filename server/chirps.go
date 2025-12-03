@@ -90,7 +90,7 @@ func getCreateChirpHandler(cfg *apiConfig) http.Handler {
 	})
 }
 
-func getGetChirpHandler(cfg *apiConfig) http.Handler {
+func getGetChirpsHandler(cfg *apiConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		type responseBody []Chirp
 		chirpsFromDb, err := cfg.db.GetChirps(r.Context())
@@ -103,5 +103,22 @@ func getGetChirpHandler(cfg *apiConfig) http.Handler {
 			chirps = append(chirps, fromDbChirp(c))
 		}
 		respondWithJSON(w, http.StatusOK, chirps)
+	})
+}
+
+func getGetChirpByIdHandler(cfg *apiConfig) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		type responseBody Chirp
+		chirpID, err := uuid.Parse(r.PathValue("chirpID"))
+		if err != nil {
+			respondWithErrorJSON(w, http.StatusNotFound, err)
+			return
+		}
+		chirpFromDb, err := cfg.db.GetChirpById(r.Context(), chirpID)
+		if err != nil {
+			respondWithErrorJSON(w, http.StatusNotFound, err)
+			return
+		}
+		respondWithJSON(w, http.StatusOK, fromDbChirp(chirpFromDb))
 	})
 }
