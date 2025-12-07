@@ -2,9 +2,11 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/the-1aw/chirpy/internal/auth"
 )
 
 type PolkaEventData struct {
@@ -22,6 +24,10 @@ const (
 
 func getPolkaWebhookHandler(cfg *apiConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if apiKey, err := auth.GetApiKey(r.Header); apiKey != cfg.polkaKey {
+			respondWithErrorJSON(w, http.StatusUnauthorized, fmt.Errorf("Unauthorized %v", err))
+			return
+		}
 		decoder := json.NewDecoder(r.Body)
 		event := PolkaEvent{}
 		if err := decoder.Decode(&event); err != nil {

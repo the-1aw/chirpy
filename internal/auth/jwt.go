@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -13,7 +12,6 @@ import (
 )
 
 const issuer = "chirpy"
-const authorizationPrefix = "bearer"
 
 func MakeJWT(userID uuid.UUID, secret string, validFor time.Duration) (string, error) {
 	claims := jwt.RegisteredClaims{
@@ -51,18 +49,6 @@ func ValidateJWTFromHeader(h http.Header, secret string) (uuid.UUID, error) {
 	} else {
 		return ValidateJWT(tokenString, secret)
 	}
-}
-
-func GetBearerToken(h http.Header) (string, error) {
-	authHeader := h.Get("authorization")
-	parts := strings.Fields(authHeader)
-	if len(parts) != 2 {
-		return "", fmt.Errorf("Invalid authorization header")
-	}
-	if strings.ToLower(parts[0]) != authorizationPrefix {
-		return "", fmt.Errorf("Invalid authorization header")
-	}
-	return parts[1], nil
 }
 
 func MakeRefreshToken() string {
