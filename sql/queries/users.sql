@@ -12,5 +12,10 @@ update users
 set hashed_password = $2, email = $3, updated_at = current_timestamp
 where id = $1;
 
+-- name: UpgradeUserToChirpyRed :exec
+update users
+set is_chirpy_red = true, updated_at = current_timestamp
+where id = $1;
+
 -- name: DeleteAllUsers :exec
 delete from users;

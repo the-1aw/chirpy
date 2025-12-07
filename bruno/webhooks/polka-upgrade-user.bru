@@ -1,0 +1,25 @@
+meta {
+  name: polka-upgrade-user
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:8080/api/polka/webhooks
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "data": {
+      "user_id": "${userID}"
+    },
+    "event": "user.upgraded"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
