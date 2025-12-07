@@ -1,0 +1,23 @@
+meta {
+  name: update
+  type: http
+  seq: 2
+}
+
+put {
+  url: http://localhost:8080/api/users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "email": "walter@breakingbad.com",
+    "password": "losPollosHermanos"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

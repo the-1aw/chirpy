@@ -45,6 +45,14 @@ func ValidateJWT(jwtString, secret string) (uuid.UUID, error) {
 	return id, nil
 }
 
+func ValidateJWTFromHeader(h http.Header, secret string) (uuid.UUID, error) {
+	if tokenString, err := GetBearerToken(h); err != nil {
+		return uuid.UUID{}, err
+	} else {
+		return ValidateJWT(tokenString, secret)
+	}
+}
+
 func GetBearerToken(h http.Header) (string, error) {
 	authHeader := h.Get("authorization")
 	parts := strings.Fields(authHeader)

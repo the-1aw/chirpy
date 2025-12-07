@@ -71,6 +71,7 @@ func Run() error {
 	mux := http.NewServeMux()
 	mux.Handle("/app/", cfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
 	mux.Handle("POST /api/users", getCreateUserHandler(&cfg))
+	mux.Handle("PUT /api/users", getUpdateUserHandler(&cfg))
 	mux.Handle("POST /api/login", getLoginHandler(&cfg))
 	mux.Handle("POST /api/refresh", getRefreshHandler(&cfg))
 	mux.Handle("POST /api/revoke", getRevokeHandler(&cfg))

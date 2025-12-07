@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "name": "chirpy",
+  "name": "chirpy-bruno-client",
   "type": "collection",
   "ignore": [
     "node_modules",
@@ -8,6 +8,8 @@
   ],
   "presets": {
     "requestType": "http",
-    "requestUrl": "http://localhost:8080"
-  }
+    "requestUrl": "http://localhost:8080/api"
+  },
+  "size": 0.0017251968383789062,
+  "filesCount": 10
 }

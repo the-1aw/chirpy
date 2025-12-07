@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -27,14 +28,15 @@ func fromDbUser(u database.User) User {
 	}
 }
 
+type UserContent struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 func getCreateUserHandler(cfg *apiConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		type requestBody struct {
-			Email    string `json:"email"`
-			Password string `json:"password"`
-		}
 		decoder := json.NewDecoder(r.Body)
-		req := requestBody{}
+		req := UserContent{}
 		if err := decoder.Decode(&req); err != nil {
 			respondWithErrorJSON(w, http.StatusInternalServerError, err)
 			return
@@ -57,5 +59,36 @@ func getCreateUserHandler(cfg *apiConfig) http.Handler {
 			return
 		}
 		respondWithJSON(w, http.StatusCreated, fromDbUser(user))
+	})
+}
+
+func getUpdateUserHandler(cfg *apiConfig) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		decoder := json.NewDecoder(r.Body)
+		uid, err := auth.ValidateJWTFromHeader(r.Header, cfg.jwtSecret)
+		if err != nil {
+			respondWithErrorJSON(w, http.StatusUnauthorized, err)
+		}
+		body := UserContent{}
+		if err := decoder.Decode(&body); err != nil || body.Email == "" || body.Password == "" {
+			respondWithErrorJSON(w, http.StatusBadRequest, fmt.Errorf("Bad request %v\n", err))
+			return
+		}
+		hashed_password, err := auth.HashPassword(body.Password)
+		if err != nil {
+			respondWithErrorJSON(w, http.StatusInternalServerError, err)
+			return
+		}
+		err = cfg.db.UpdateUserById(r.Context(), database.UpdateUserByIdParams{
+			ID:             uid,
+			Email:          body.Email,
+			HashedPassword: hashed_password,
+		})
+		user, err := cfg.db.GetUserByEmail(r.Context(), body.Email)
+		if err != nil {
+			respondWithErrorJSON(w, http.StatusInternalServerError, err)
+			return
+		}
+		respondWithJSON(w, http.StatusOK, fromDbUser(user))
 	})
 }
