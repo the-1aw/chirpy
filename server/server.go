@@ -13,6 +13,7 @@ import (
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
+	jwtSecret      string
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -54,13 +55,18 @@ func healthz(w http.ResponseWriter, r *http.Request) {
 
 func Run() error {
 	dbUrl := os.Getenv("DB_URL")
+	jwtSecret, ok := os.LookupEnv("JWT_SECRET")
+	if !ok {
+		return fmt.Errorf("Missing jwt secret")
+	}
 	db, err := sql.Open("postgres", dbUrl)
 	if err != nil {
 		return err
 	}
 	dbQueries := database.New(db)
 	cfg := apiConfig{
-		db: dbQueries,
+		db:        dbQueries,
+		jwtSecret: jwtSecret,
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/app/", cfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))

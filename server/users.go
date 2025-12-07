@@ -63,8 +63,13 @@ func getCreateUserHandler(cfg *apiConfig) http.Handler {
 func getLoginHandler(cfg *apiConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		type requestBody struct {
-			Email    string `json:"email"`
-			Password string `json:"password"`
+			Email        string `json:"email"`
+			Password     string `json:"password"`
+			ExpiresInSec int64  `json:"expires_in_seconds"`
+		}
+		type responseBody struct {
+			User
+			Token string `json:"token"`
 		}
 		decoder := json.NewDecoder(r.Body)
 		req := requestBody{}
@@ -82,7 +87,15 @@ func getLoginHandler(cfg *apiConfig) http.Handler {
 			respondWithErrorJSON(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 			return
 		}
-		respondWithJSON(w, http.StatusOK, fromDbUser(user))
+		validFor := time.Duration(req.ExpiresInSec) * time.Second
+		if validFor == 0 {
+			validFor = time.Hour
+		}
+		token, err := auth.MakeJWT(user.ID, cfg.jwtSecret, validFor)
+		respondWithJSON(w, http.StatusOK, responseBody{
+			User:  fromDbUser(user),
+			Token: token,
+		})
 	})
 
 }

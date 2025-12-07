@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/the-1aw/chirpy/internal/auth"
 	"github.com/the-1aw/chirpy/internal/database"
 )
 
@@ -56,11 +57,20 @@ func sanitizeChirpBody(body string) (string, error) {
 func getCreateChirpHandler(cfg *apiConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		type requestBody struct {
-			Body   string    `json:"body"`
-			UserID uuid.UUID `json:"user_id"`
+			Body string `json:"body"`
 		}
 		type responseBody struct {
 			CleanedBody string `json:"cleaned_body"`
+		}
+		tokenStr, err := auth.GetBearerToken(r.Header)
+		if err != nil {
+			respondWithErrorJSON(w, http.StatusUnauthorized, err)
+			return
+		}
+		uid, err := auth.ValidateJWT(tokenStr, cfg.jwtSecret)
+		if err != nil {
+			respondWithErrorJSON(w, http.StatusUnauthorized, err)
+			return
 		}
 		rawBody, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -79,7 +89,7 @@ func getCreateChirpHandler(cfg *apiConfig) http.Handler {
 			return
 		}
 		chirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{
-			UserID: body.UserID,
+			UserID: uid,
 			Body:   chirpBody,
 		})
 		if err != nil {
