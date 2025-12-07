@@ -72,6 +72,8 @@ func Run() error {
 	mux.Handle("/app/", cfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
 	mux.Handle("POST /api/users", getCreateUserHandler(&cfg))
 	mux.Handle("POST /api/login", getLoginHandler(&cfg))
+	mux.Handle("POST /api/refresh", getRefreshHandler(&cfg))
+	mux.Handle("POST /api/revoke", getRevokeHandler(&cfg))
 	mux.Handle("POST /api/chirps", getCreateChirpHandler(&cfg))
 	mux.Handle("GET /api/chirps", getGetChirpsHandler(&cfg))
 	mux.Handle("GET /api/chirps/{chirpID}", getGetChirpByIdHandler(&cfg))
