@@ -1,0 +1,20 @@
+meta {
+  name: refresh
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:8080/api/refresh
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: 6bbe018bfd92be5f144cc78f0f97c660e621f6d54bc6f4f9aa4ead7a2b51e0b7
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
