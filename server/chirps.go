@@ -102,7 +102,6 @@ func getCreateChirpHandler(cfg *apiConfig) http.Handler {
 
 func getGetChirpsHandler(cfg *apiConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		type responseBody []Chirp
 		chirpsFromDb, err := cfg.db.GetChirps(r.Context())
 		if err != nil {
 			respondWithErrorJSON(w, http.StatusInternalServerError, err)
@@ -118,7 +117,6 @@ func getGetChirpsHandler(cfg *apiConfig) http.Handler {
 
 func getGetChirpByIdHandler(cfg *apiConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		type responseBody Chirp
 		chirpID, err := uuid.Parse(r.PathValue("chirpID"))
 		if err != nil {
 			respondWithErrorJSON(w, http.StatusNotFound, err)
@@ -130,5 +128,33 @@ func getGetChirpByIdHandler(cfg *apiConfig) http.Handler {
 			return
 		}
 		respondWithJSON(w, http.StatusOK, fromDbChirp(chirpFromDb))
+	})
+}
+
+func getDeleteChirpByIdHandler(cfg *apiConfig) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		chirpID, err := uuid.Parse(r.PathValue("chirpID"))
+		if err != nil {
+			respondWithErrorJSON(w, http.StatusBadRequest, err)
+			return
+		}
+		uid, err := auth.ValidateJWTFromHeader(r.Header, cfg.jwtSecret)
+		if err != nil {
+			respondWithErrorJSON(w, http.StatusUnauthorized, err)
+			return
+		}
+		if chirp, err := cfg.db.GetChirpById(r.Context(), chirpID); err != nil {
+			respondWithErrorJSON(w, http.StatusNotFound, err)
+			return
+		} else if chirp.UserID != uid {
+			respondWithErrorJSON(w, http.StatusForbidden, fmt.Errorf("Forbidden"))
+			return
+		}
+		err = cfg.db.DeleteChirp(r.Context(), database.DeleteChirpParams{ID: chirpID, UserID: uid})
+		if err != nil {
+			respondWithErrorJSON(w, http.StatusInternalServerError, err)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
 	})
 }

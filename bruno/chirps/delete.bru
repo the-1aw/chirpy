@@ -1,0 +1,20 @@
+meta {
+  name: delete
+  type: http
+  seq: 2
+}
+
+delete {
+  url: http://localhost:8080/api/chirps/:chirpID
+  body: none
+  auth: inherit
+}
+
+params:path {
+  chirpID: 31f28371-8a92-40e4-9402-fce9b3392a99
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

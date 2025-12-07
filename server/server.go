@@ -78,6 +78,7 @@ func Run() error {
 	mux.Handle("POST /api/chirps", getCreateChirpHandler(&cfg))
 	mux.Handle("GET /api/chirps", getGetChirpsHandler(&cfg))
 	mux.Handle("GET /api/chirps/{chirpID}", getGetChirpByIdHandler(&cfg))
+	mux.Handle("DELETE /api/chirps/{chirpID}", getDeleteChirpByIdHandler(&cfg))
 	mux.HandleFunc("GET /api/healthz", healthz)
 	mux.HandleFunc("GET /admin/metrics", cfg.requestCount)
 	mux.HandleFunc("POST /admin/reset", cfg.reset)
