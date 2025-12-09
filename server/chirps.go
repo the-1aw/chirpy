@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -100,9 +101,22 @@ func getCreateChirpHandler(cfg *apiConfig) http.Handler {
 	})
 }
 
+const (
+	sortOrderAsc  = "asc"
+	sortOrderDesc = "desc"
+)
+
 func getGetChirpsHandler(cfg *apiConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authorID := r.URL.Query().Get("author_id")
+		sort := r.URL.Query().Get("sort")
+		if sort == "" {
+			sort = sortOrderAsc
+		}
+		if sort != sortOrderAsc && sort != sortOrderDesc {
+			respondWithErrorJSON(w, http.StatusBadRequest, fmt.Errorf("Invalid sort %s must be %s or %s", sort, sortOrderAsc, sortOrderDesc))
+			return
+		}
 		var chirpsFromDb []database.Chirp
 		var err error
 		if authorID != "" {
@@ -123,6 +137,13 @@ func getGetChirpsHandler(cfg *apiConfig) http.Handler {
 		for _, c := range chirpsFromDb {
 			chirps = append(chirps, fromDbChirp(c))
 		}
+		slices.SortStableFunc(chirps, func(a Chirp, b Chirp) int {
+			if sort == sortOrderDesc {
+				return b.CreatedAt.Compare(a.CreatedAt)
+			} else {
+				return a.CreatedAt.Compare(b.CreatedAt)
+			}
+		})
 		respondWithJSON(w, http.StatusOK, chirps)
 	})
 }

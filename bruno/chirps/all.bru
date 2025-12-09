@@ -5,11 +5,17 @@ meta {
 }
 
 get {
-  url: http://localhost:8080/api/chirps
+  url: http://localhost:8080/api/chirps?sort=desc
   body: none
   auth: inherit
 }
 
+params:query {
+  sort: desc
+  ~author_id: 0b728a38-acb3-4b09-8761-149ede493d66
+}
+
 settings {
   encodeUrl: true
+  timeout: 0
 }
